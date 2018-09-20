@@ -26,23 +26,29 @@ int16_t gx1, gy1, gz1;
 int16_t ax2, ay2, az2;
 int16_t gx2, gy2, gz2;
 
+int16_t ax10, ay10, az10;
+int16_t gx10, gy10, gz10;
+
+int16_t ax20, ay20, az20;
+int16_t gx20, gy20, gz20;
+
 int analogPin0 = 0;     // potentiometer wiper (middle terminal) connected to analog pin 0
                        // outside leads to ground and +5V
 int analogPin1 = 1;     // potentiometer wiper (middle terminal) connected to analog pin 1
                        // outside leads to ground and +5V
-int val0 = 0;           // variable to store the value read
-int val1 = 0;           // variable to store the value read
-float voltage1 =0;
-float voltage2 =0;
-float current1=0;
-float current2=0;
-float power1=0;
-float power2=0;
-float energy1=0;
-float energy2=0;
+float val = 0;           // variable to store the value read
+float cur = 0;           // variable to store the value read
+float voltage =0;
+float current=0;
+float power=0;
+float energy=0;
+float totalenergy=0;
+
 
 float currenttime;
 float pasttime;
+int flag=1;
+
 
 bool blinkState = false;
 
@@ -75,8 +81,19 @@ pinMode(A1,INPUT);
 }
 
 void loop() {
-
+    //intialize accel and gyro
+  if(flag=1){
+      accelgyroIC1.getMotion6(&ax1, &ay1, &az1, &gx1, &gy1, &gz1);
+      accelgyroIC2.getMotion6(&ax2, &ay2, &az2, &gx2, &gy2, &gz2);
+      ax10=ax1; ay10=ay1;az10=az1; 
+      gx10=gx1; gy10=gy1;gz10=gz1;
+      ax20=ax2; ay20=ay2;az20=az2; 
+      gx20=gx2; gy20=gy2;gz20=gz2;
+      
+      flag=0;
+    }
   pasttime=millis();
+  
 
   //digitalWrite(13,HIGH);
   //delay(500);
@@ -94,53 +111,47 @@ accelgyroIC2.getMotion6(&ax2, &ay2, &az2, &gx2, &gy2, &gz2);
   currenttime=millis();
 
 // display tab-separated accel/gyro x/y/z values
-Serial.print("MPU1:\t");
-Serial.print(ax1/16384.0, 2); Serial.print("\t");
-Serial.print(ay1/16384.0, 2); Serial.print("\t");
-Serial.print(az1/16384.0, 2); Serial.print("\t");
-Serial.print(gx1/131, 2); Serial.print("\t");
-Serial.print(gy1/131, 2); Serial.print("\t");
-Serial.println(gz1/131, 2);
+Serial.println("MPU1:\t");
+Serial.print("accel (g):");
+Serial.print((ax1-ax10)/16384.0, 2);Serial.print("\t");
+Serial.print((ay1-ay10)/16384.0, 2);Serial.print("\t");
+Serial.print((az1-az10)/16384.0, 2);Serial.print("\t");
+Serial.println();
+Serial.print("gyro (deg):");
+Serial.print((gx1-gx10)/131.0, 2); Serial.print("\t");
+Serial.print((gy1-gy10)/131.0, 2); Serial.print("\t");
+Serial.print((gz1-gz10)/131.0, 2); Serial.print("\t");
 
-
+Serial.println();
 // display tab-separated accel/gyro x/y/z values
-Serial.print("MPU2:\t");
-Serial.print(ax2/16384.0, 2); Serial.print("\t");
-Serial.print(ay2/16384.0, 2); Serial.print("\t");
-Serial.print(az2/16384.0, 2); Serial.print("\t");
-Serial.print(gx2/131, 2); Serial.print("\t");
-Serial.print(gy2/131, 2); Serial.print("\t");
-Serial.println(gz2/131, 2);
+Serial.println("MPU2:\t");
+Serial.print("accel (g):");
+Serial.print((ax2-ax20)/16384.0, 2); Serial.print("\t");
+Serial.print((ay2-ay20)/16384.0, 2); Serial.print("\t");
+Serial.print((az2-az20)/16384.0, 2); Serial.print("\t");
+Serial.println();
+Serial.print("gyro (deg):");
+Serial.print((gx2-gx20)/131.0, 2); Serial.print("\t");
+Serial.print((gy2-gy20)/131.0, 2); Serial.print("\t");
+Serial.print((gz2-gz20)/131.0, 2); Serial.println("\t");
 
 
-  val0 = analogRead(A0);     // read the input pin0 for voltage divider
-  voltage1=(val0*5.0/1023.0*2);
-  current1=(voltage1/(2.0*75000.0));
-  power1=(voltage1*current1); 
-  energy1=(power1*(currenttime-pasttime));
-  
-  Serial.print(F("VD : "));
-  Serial.print(voltage1, 2);  Serial.println("V");
-  Serial.print(current1*1000.0, 2);Serial.println("mA");
-  Serial.print(power1*1000.0, 2);Serial.println("mW");
-  Serial.println(energy1, 2);Serial.println("J");
- 
-  
-  val1 = analogRead(A1);     // read the input pin1 for current sensor 
-  voltage2=(val1*5.0/1023.0);
-  current2=((voltage2*1000.0)/(0.1*10000.0));
-  power2=(voltage2*current2); 
-  energy2=(power2*(currenttime-pasttime));
-  Serial.print(F("CSV: "));
-  Serial.print(voltage2, 2);  Serial.println("V");
-  Serial.print(current2*1000.0, 2);Serial.println("mA");
-  Serial.print(power2*1000.0, 2);Serial.println("mW");
-  Serial.print(energy2, 2);Serial.println("J");
-  Serial.println();
+  val = analogRead(A0)*5.0/1023.0;     // read the input pin0 for voltage divider
+  cur = analogRead(A1)*5.0/1023.0; // read the input pin1 for current sensor 
+   
+  voltage=(val*2.0);
+  Serial.print(voltage*1.0, 2);  Serial.println("V");
+  //Serial.print(cur*1.0, 2);  Serial.println("V");
+  current=((cur*1000.0)/(0.09*10000.0));
+  Serial.print(current*1000.0, 2); Serial.println("mA");
+  power=(voltage*current); 
+  Serial.print(power*1000.0, 2);Serial.println("mW");
+  energy=(power*(currenttime-pasttime));
+  Serial.print(energy*1.0, 2);Serial.println("J");
+  totalenergy=(totalenergy+energy);
+  Serial.print(totalenergy*1.0, 2);Serial.println("J");
 
 delay(500);
 
-// blink LED to indicate activity
-//blinkState = !blinkState;
-//digitalWrite(LED_PIN, blinkState);
+
 }
